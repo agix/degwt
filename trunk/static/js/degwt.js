@@ -42,22 +42,13 @@ FilterableObject.prototype.map =  function (mapperFn) {
  */
 FilterableObject.prototype.getFirstKey = function() {
 	for (key in this) {
-		if (key == 'filter') {
+		if (key == 'filter' || key == 'map' || key == 'getFirstKey') {
 			continue;
 		}
 		return key;
 	}
+	return null;
 };
-
-/*
- * Utility method to check if text is empty
- */
-function isEmpty(text) {
-	if( typeof(text) == undefined || text == null || text == "" ) {
-		return true;
-	}
-	return false;
-}
 
 /**
  * Gets the handle to gwt contentWindow
@@ -195,6 +186,17 @@ function degwt_obf(gwt) {
 		return decoratedClasses;
 	};
 	
+	this.getClassFromTypeId = function(typeId) {
+		var matchingClasses = this.getAllClasses().filter(function(className, classObj){
+			if(classObj.prototype.tI == typeId) {
+				return true;
+			}
+			return false;
+		});
+		
+		return matchingClasses.getFirstKey();
+	};
+	
 	/**
 	 * Gets the pretty name for a RPC Method
 	 * Assumption : 
@@ -206,7 +208,7 @@ function degwt_obf(gwt) {
 	 * 4) The value of $H will be something like GreetingService_Proxy.greetServer 
 	 * 5) We don't like the _Proxy, so we replace it with the empty string  
 	 */
-	function getRpcMethodPrettyName(obfMethodName, rpcMethod) {
+	var getRpcMethodPrettyName = function(obfMethodName, rpcMethod) {
 		var regex = /stats\(.*,\s*method\s*:\s*([a-zA-Z0-9$_]*)\s*,/;
 		var match = regex.exec(rpcMethod.toString());
 		if(match != null && match.length > 1) {
@@ -223,7 +225,7 @@ function degwt_obf(gwt) {
 	 * We return a pretty name for the class..
 	 * The toString() method is defined on every object, so we just use it.
 	 */
-	function getClassPrettyName(obfClassName, classObj) {
+	var getClassPrettyName = function(obfClassName, classObj) {
 		if((typeof(classObj) == 'function') && typeof(classObj.prototype) == 'object' && typeof(classObj.prototype.gC) == 'function') {
 			var className = classObj.prototype.gC();
 			if (className && className.toString) {
@@ -261,6 +263,41 @@ function degwt_pretty(gwt) {
 			return false;
 		});
 		return rpcMethods;
+	};
+	
+	/**
+	 * Gets all Classes that have been defined in the script.
+	 * Assumptions -
+	 * 1) All GWT classes have the equals() method. In obfuscated mode, this is abbreviated as eQ()
+	 * 2) The presence of eQ() method in the prototype is sufficient to indicate this is a java class that has been translated to javascript.
+	 * 
+	 * Algorithm
+	 * 1) Find all objects that have the equals() method (see above)
+	 * 2) Return the objects after trying to find the de-obfuscated classname
+	 */
+	this.getAllClasses = function(){
+		var rawClasses = this.$gwt.filter(function(key, value) {
+			try {
+				if((typeof(value) == 'function') && typeof(value.prototype) == 'object' && typeof(value.prototype.equals$) == 'function') {
+					return true;
+				}
+			}
+			catch(e){}
+			return false;
+		});
+		
+		return rawClasses;
+	};
+	
+	this.getClassFromTypeId = function(typeId) {
+		var matchingClasses = this.getAllClasses().filter(function(className, classObj){
+			if(classObj.prototype.typeId$ == typeId) {
+				return true;
+			}
+			return false;
+		});
+		
+		return matchingClasses.getFirstKey();
 	};
 };
 
