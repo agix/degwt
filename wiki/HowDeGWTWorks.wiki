@@ -1,0 +1,10 @@
+#summary Technical Information on how the de-obfuscation process works
+
+= How DeGWT Works =
+
+DeGWT is a javascript library that de-obfuscates GWT generated javascript code. In general, the code makes assumptions on how GWT generates code, and then uses them to generate unobfuscated code. This page documents these assumptions.
+
+== Comparing Pretty and Obfuscated Javascript Code ==
+GWT can generate javascript code in three styles - Obfuscated (default), Pretty and Detailed. Most of the reverse engineering is done by comparing the Pretty output to the Obfuscated output. Therefore, it is important to understand the pretty output.
+
+For this section, we will compare 
