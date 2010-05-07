@@ -7,4 +7,9 @@ DeGWT is a javascript library that de-obfuscates GWT generated javascript code. 
 == Comparing Pretty and Obfuscated Javascript Code ==
 GWT can generate javascript code in three styles - Obfuscated (default), Pretty and Detailed. Most of the reverse engineering is done by comparing the Pretty output to the Obfuscated output. Therefore, it is important to understand the pretty output.
 
-For this section, we will compare 
+In general, the difference between Pretty and Obfuscated javascript are the following -
+# All classes and methods are renamed. Typically, classes and methods have 2 or 3 letter names.
+# All strings are inlined. If pretty js has code like `$addString(streamWriter, 'greetServer')`, in obfuscated mode it will become something like `aG(pQ, rS);`.
+# Here, the method `$addString` and the variable `streamWriter` were renamed, and the String "greetServer" was stored in a variable rS, and then the variable was used instead.
+
+== Representing Classes in Javascript ==
