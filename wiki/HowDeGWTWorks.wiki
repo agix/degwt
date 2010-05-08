@@ -34,4 +34,18 @@ At the end of this procedure, the global variable `$gwt` will point to GWTs name
   # Member variables can be identified by iterating over the function using the `for.. in` javascript construct; but because javascript isn't typesafe, the type of member variable cannot be determined easily. Also, in obfuscated mode, the member variables may have names like `a` and `b`, which don't make much sense.
 
 == Identifying RPC Methods ==
-  # 
+  # A RPC method in javascript has the signature `methodName(ServiceProxy, <RPC method parameters>, AsyncCallback)`
+  # The RPC method uses ServiceProxy to convert the remaining method parameters into a string payload. 
+  # The payload contains the class and method name of the service, the class name and signature for each service parameter, the number of parameters, and then the serialized data for the parameters.  
+  # Then, it invokes the $doInvoke method with the payload, callback and some additional parameters
+  # $doInvoke method makes the AJAX call, and calls the the callback when the data arrives.
+  # $doInvoke method has a `try/catch` block which throws an exception with the string literal "Unable to initiate the asynchronous service invocation -- check the network connection"
+  # Also, every RPC method plugin to the `Lightweight Metrics System` to report on the time taken for the method call. Based on the logging call, it is possible to identify the method and class name of the RPC Service.
+
+Based on the above, the procedure to get the list of RPC methods is as follows - 
+  # Find the global variable which has the interned string "Unable to initiate the asynchronous service invocation -- check the network connection"
+  # Find the method that references the variable found above. This is the $doInvoke() method.
+  # Find all methods that invoke the method found above. These are the RPC methods.
+  # This method will have a cryptic name - like `aEd()`. To find the de-obfuscated name, parse the call to `$stats` method call and obtain the class and method name. 
+  # To get the method name, either parse the payload; or parse the call that is made to the `$stats` reporting system.
+  # The type of the parameters can be obtained from the calls to generate the payload.
