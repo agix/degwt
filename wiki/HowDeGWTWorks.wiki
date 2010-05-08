@@ -1,8 +1,8 @@
 #summary Technical Information on how the de-obfuscation process works
 
-= How DeGWT Works =
-
 DeGWT is a javascript library that de-obfuscates GWT generated javascript code. In general, the code makes assumptions on how GWT generates code, and then uses them to generate unobfuscated code. This page documents these assumptions.
+
+<wiki:toc max_depth="2" />
 
 == Comparing Pretty and Obfuscated Javascript Code ==
 GWT can generate javascript code in three styles - Obfuscated (default), Pretty and Detailed. Most of the reverse engineering is done by comparing the Pretty output to the Obfuscated output. Therefore, it is important to understand the pretty output.
@@ -13,15 +13,15 @@ In general, the difference between Pretty and Obfuscated javascript are the foll
   # Here, the method `$addString` and the variable `streamWriter` were renamed, and the String "greetServer" was stored in a variable rS, and then the variable was used instead.
 
 == Identifying GWT Code==
-GWT has a bootstrapping and selection script named <module-name>.nocache.js. This is the script that is embedded in the host html. This creates a hidden iframe, sniffs the browser and then loads the javascript _code specific to the browser_ in the hidden iframe. All GWT classes and functions are defined within this hidden Iframe.
+GWT has a bootstrapping and selection script named `<module-name>.nocache.js`. This is the script that is embedded in the host html. This creates a hidden iframe, sniffs the browser and then loads the javascript _code specific to the browser_ in the hidden iframe. All GWT classes and functions are defined within this hidden Iframe.
 
-GWT generated code always defines some variables - like $gwt_version, $wnd and $doc. The presence of any of these variables indicates that we are dealing with GWT. 
+GWT generated code always defines some variables - like `$gwt_version`, `$wnd` and `$doc`. The presence of any of these variables indicates that we are dealing with GWT. 
 
 So, to determine if a website is built on GWT, we do the following - 
-  # See if $gwt_version is defined in the current window. If yes, $gwt = window
-  # Iterate over all Iframes and search for the variable $gwt_version. If found, $gwt = iframe.contentWindow
+  # See if `$gwt_version` is defined in the current window. If yes, `$gwt = window`
+  # Iterate over all Iframes and search for the variable $gwt_version. If found, `$gwt = iframe.contentWindow`
 
-At the end of this procedure, the global variable $gwt will point to GWTs namespace and will contain the obfuscated code. If $gwt is null, it is safe to assume the website doesn't use GWT.
+At the end of this procedure, the global variable `$gwt` will point to GWTs namespace and will contain the obfuscated code. If `$gwt` is null, it is safe to assume the website doesn't use GWT.
 
 == Representing Classes in Javascript ==
   # Java Classes are represented as functions in GWT eg. `function Person(){}`
