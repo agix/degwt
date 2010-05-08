@@ -1,20 +1,17 @@
-/**
- * FilterableObject is a regular object with the additional method map() and filter()
- * If you know functional programming, they should be familiar to you.
- */
-function FilterableObject() {}
 /** 
  * filter() method iterates over all key/value pair in 'this', and then decides which key/value pairs to keep or discard.
  * The key/value pairs that must be kept are then returned as another FilterableObject.
  * 
  * Importantly - the decision to keep or discard a key/value pair is taken by a user defined function that is passed as a parameter.
  */
-FilterableObject.prototype.filter =  function (filterFn) {
-	var result = new FilterableObject();
+Object.prototype.filter =  function (filterFn) {
+	var result = {};
 	for(key in this) {
-		var value = this[key];
-		if (filterFn(key, value)) {
-			result[key] = value;
+		if (this.hasOwnProperty(key)) {
+			var value = this[key];
+			if (filterFn(key, value)) {
+				result[key] = value;
+			}
 		}
 	}
 	return result;
@@ -23,16 +20,34 @@ FilterableObject.prototype.filter =  function (filterFn) {
 /**
  * map() iterates over all key/value pairs and transforms it to another key/value pair.
  * Essentially, 
- * FilterableObject(key1s,value1s) becomes FilterableObject(key2s, value2s)
+ * {keyold1:valueold1, keyold2:valueold2} becomes {keynew1:valuenew1, keynew2:valuenew2}
  *  
  */
-FilterableObject.prototype.map =  function (mapperFn) {
-	var result = new FilterableObject();
+Object.prototype.map =  function (mapperFn) {
+	var result = {};
 	for(key in this) {
-		var value = this[key];
-		var pair;
-		pair = mapperFn(key, value);
-		result[pair.key] = pair.value;
+		if (this.hasOwnProperty(key)) {
+			var value = this[key];
+			var pair;
+			pair = mapperFn(key, value);
+			result[pair.key] = pair.value;
+		}
+	}
+	return result;
+};
+
+/**
+ * Reduce the object to a single string value 
+ * reduceFn takes 3 parameters - key, value, and initialValue
+ * Its job is to create a string representation of the key/value pair, append it to initialValue and return the newValue
+ */
+Object.prototype.reduce =  function (reducerFn, initialValue) {
+	var result = initialValue;
+	for(key in this) {
+		if (this.hasOwnProperty(key)) {
+			var value = this[key];
+			result = reducerFn(key, value, result);
+		}
 	}
 	return result;
 };
@@ -40,15 +55,18 @@ FilterableObject.prototype.map =  function (mapperFn) {
 /**
  * Utility method to get the first key in the FilterableOject
  */
-FilterableObject.prototype.getFirstKey = function() {
+Object.prototype.getFirstKey = function() {
 	for (key in this) {
-		if (key == 'filter' || key == 'map' || key == 'getFirstKey') {
-			continue;
+		if (this.hasOwnProperty(key)) {
+			if (key == 'filter' || key == 'map' || key == 'getFirstKey') {
+				continue;
+			}
+			return key;
 		}
-		return key;
 	}
 	return null;
 };
+
 
 /**
  * Gets the handle to gwt contentWindow
@@ -76,10 +94,11 @@ function getGWT() {
 	}
 	
 	if(gwt) {
-		//Add the filter() and map() methods to the $gwt object, so that we can chain filter() and map() method calls
-		gwt.filter = FilterableObject.prototype.filter;
-		gwt.map = FilterableObject.prototype.map;
+		gwt.filter = Object.prototype.filter;
+		gwt.map = Object.prototype.map;
+		gwt.getFirstKey = Object.prototype.getFirstKey;
 	}
+	
 	return gwt;
 }
 
@@ -145,7 +164,7 @@ function degwt_obf(gwt) {
 		});
 		
 		return rpcMethods.map(function(obfMethodName, method) {
-			var pair = new Object();
+			var pair = {};
 			pair.key = getRpcMethodPrettyName(obfMethodName, method);
 			pair.value = method;
 			return pair;
@@ -173,11 +192,13 @@ function degwt_obf(gwt) {
 			return false;
 		});
 		
+		//return rawClasses;
+		
 		/*
 		 * We'll try to identify the de-obfuscated class name over here
 		 */
 		var decoratedClasses = rawClasses.map(function(obfClassName, classObj) {
-			var pair = new Object();
+			var pair = {};
 			pair.key = getClassPrettyName(obfClassName, classObj);
 			pair.value = classObj;
 			return pair;
@@ -214,10 +235,10 @@ function degwt_obf(gwt) {
 		if(match != null && match.length > 1) {
 			var constantName = match[1];
 			var constantValue = $gwt[constantName];
-			return constantValue.replace('_Proxy', '');
+			return '(' + obfMethodName + ') ' + constantValue.replace('_Proxy', '');
 		}
 		else {
-			return obfMethodName;
+			return '(' + obfMethodName + ') ';
 		}
 	}
 	
@@ -226,14 +247,10 @@ function degwt_obf(gwt) {
 	 * The toString() method is defined on every object, so we just use it.
 	 */
 	var getClassPrettyName = function(obfClassName, classObj) {
-		if((typeof(classObj) == 'function') && typeof(classObj.prototype) == 'object' && typeof(classObj.prototype.gC) == 'function') {
-			var className = classObj.prototype.gC();
-			if (className && className.toString) {
-				return className.toString();
-			}
+		if(classObj && classObj.prototype && typeof(classObj.prototype.gC) === 'function' && classObj.prototype.gC()) {
+			return '(' + obfClassName + ') ' + classObj.prototype.gC().toString();
 		}
-		
-		return obfClassName;		
+		return '(' + obfClassName + ') ';
 	}
 };
 
@@ -381,18 +398,9 @@ function user_interface()
 		var html;
 		html = "RPC Methods : <select>";
 		
-		/*TODO Introduce a reduce() method in FilterableObject*/
+		/*TODO Introduce a reduce() method in Object*/
 		var allMethods = $degwt.getAllRPCMethods();
-		for(key in allMethods) {
-			var value = allMethods[key];
-			if (canSkipMethod(key)) {
-				continue;
-			}
-			
-			html += "<option>";
-			html += key;
-			html += "</option>";
-		}
+		html += allMethods.reduce((function(key, value, buffer) {return buffer + " <option>" + key + "</option>";}), "");
 		html += "</select>";
 		return html;
 	}
@@ -401,37 +409,12 @@ function user_interface()
 		var html;
 		html = "Classes : <select>";
 		
-		/*TODO Introduce a reduce() method in FilterableObject*/
+		/*TODO Introduce a reduce() method in Object*/
 		var allMethods = $degwt.getAllClasses();
-		for(key in allMethods) {
-			var value = allMethods[key];
-			if (canSkipMethod(key)) {
-				continue;
-			}			
-			if(key.indexOf("java") != -1) {
-				continue;
-			}
-			if(key.indexOf("google") != -1) {
-				continue;
-			}
-			
-			html += "<option>";
-			html += key;
-			html += "</option>";
-		}
+		html += allMethods.reduce((function(key, value, buffer) {return buffer + " <option>" + key + "</option>";}), "");
+
 		html += "</select>";
 		return html;
-	}
-	
-	/*
-	 * UGLY HACK - Move it to FilterableObject somehow.. 
-	 * potentially combine it with the new reduce() method
-	 */
-	function canSkipMethod(methodName) {
-		if(methodName == 'filter' || methodName == 'map' || methodName == 'getFirstKey') {
-			return true;
-		}
-		return false;
 	}
 };
 new user_interface();
