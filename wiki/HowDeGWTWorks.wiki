@@ -31,5 +31,7 @@ At the end of this procedure, the global variable `$gwt` will point to GWTs name
   # In Obfuscated mode, `getClass$()` becomes `gC()`, `equals()` becomes `eQ`, `hashCode` becomes 'hC` and `typeId` becomes `tI`.
   # The class names are available by invoking the method `classObj.gC().toString()`.
   # By inspecting the prototype chain, you can figure out the inheritance hierarchy of the class.
+  # Member variables can be identified by iterating over the function using the `for.. in` javascript construct; but because javascript isn't typesafe, the type of member variable cannot be determined easily. Also, in obfuscated mode, the member variables may have names like `a` and `b`, which don't make much sense.
 
 == Identifying RPC Methods ==
+  # 
