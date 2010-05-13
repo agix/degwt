@@ -5,7 +5,7 @@
 
 
 = Bookmarklet Installation =
-<wiki:gadget url="https://degwt.googlecode.com/svn/trunk/static/xml/gwtmetrics-gadget.xml" height="200" border="0" />
+<wiki:gadget url="https://degwt.googlecode.com/svn/trunk/static/xml/gwtmetrics-gadget.xml" height="150px" width="600px" border="0" />
 
 = Standalone Installation =
 The bookmarklet installation has limitations - its difficult to see the metrics generated at startup. To get around that, place the following two lines of code in your host html file _just before_ your module.nocache.js script tag.
