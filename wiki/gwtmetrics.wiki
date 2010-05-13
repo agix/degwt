@@ -1,0 +1,7 @@
+#summary Reporting tool for GWTs Lightweight Metrics
+
+= Introduction =
+[http://code.google.com/webtoolkit/doc/latest/DevGuideLightweightMetrics.html GWTs Lightweight Metrics] is a great mechanism to instrument and capture data, but including it in a project is cumbersome. GWT Metrics plugs into the lightweight metrics system, collates the data, and reports it either in firebug or in a YUI Log Console. Since its just a javascript file, it can be loaded via a Bookmarklet. This makes it possible to see metrics on any GWT website without changing a single line of code.
+
+
+= Quick Installation =
