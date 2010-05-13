@@ -5,11 +5,7 @@
 
 
 = Bookmarklet Installation =
-The fastest way is via the bookmarklet.
-  * Create a bookmark called 'gwtmetrics' in your browser
-  * <wiki:gadget url="https://degwt.googlecode.com/svn/trunk/static/xml/gwtmetrics-gadget.xml" height="50" border="0" />
-  * Browse to any GWT application and then click on the bookmark
-  * Open firebug console - you should see the metrics
+<wiki:gadget url="https://degwt.googlecode.com/svn/trunk/static/xml/gwtmetrics-gadget.xml" height="200" border="0" />
 
 = Standalone Installation =
 The bookmarklet installation has limitations - its difficult to see the metrics generated at startup. To get around that, place the following two lines of code in your host html file _just before_ your module.nocache.js script tag.
