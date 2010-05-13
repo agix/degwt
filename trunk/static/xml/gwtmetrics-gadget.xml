@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" ?> 
+<Module>
+  <ModulePrefs title="GWT Metrics Bookmarklet" /> 
+  <Content type="html">
+     <![CDATA[
+     <a href="javascript:(function(){mtrc=document.createElement('SCRIPT');mtrc.type='text/javascript';mtrc.src='http://degwt.googlecode.com/svn/trunk/static/js/gwtmetrics.js';document.getElementsByTagName('head')[0].appendChild(mtrc);var%20ld=function(){if(window.gwtmetrics){gwtmetrics('firebug');}else{setTimeout(ld,100);}};setTimeout(ld,100);})();"> 
+        <div style="background-color:#E5ECF9">
+	  Drag me to your bookmarks folder
+        </div>
+      </a>
+     ]]>
+  </Content> 
+</Module>
