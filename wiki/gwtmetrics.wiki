@@ -4,5 +4,22 @@
 [http://code.google.com/webtoolkit/doc/latest/DevGuideLightweightMetrics.html GWTs Lightweight Metrics] is a great mechanism to instrument and capture data, but including it in a project is cumbersome. GWT Metrics plugs into the lightweight metrics system, collates the data, and reports it either in firebug or in a YUI Log Console. Since its just a javascript file, it can be loaded via a Bookmarklet. This makes it possible to see metrics on any GWT website without changing a single line of code.
 
 
-= Quick Installation =
-<iframe src="http://google.com"></iframe>
+= Bookmarklet Installation =
+The fastest way is via the bookmarklet.
+  * Create a bookmark called 'gwtmetrics' in your browser
+  * Copy/Paste the following as the URL for the bookmark
+{{{
+javascript:(function(){mtrc=document.createElement('SCRIPT');mtrc.type='text/javascript';mtrc.src='http://degwt.googlecode.com/svn/trunk/static/js/gwtmetrics.js';document.getElementsByTagName('head')[0].appendChild(mtrc);var%20ld=function(){if(window.gwtmetrics){gwtmetrics('firebug');}else{setTimeout(ld,100);}};setTimeout(ld,100);})();
+}}}
+  * Browse to any GWT application and then click on the bookmark
+  * Open firebug console - you should see the metrics
+
+= Standalone Installation =
+The bookmarklet installation has limitations - its difficult to see the metrics generated at startup. To get around that, place the following two lines of code in your host html file _just before_ your module.nocache.js script tag.
+
+{{{
+<script type="text/javascript" language="javascript" src="http://degwt.googlecode.com/svn/trunk/static/js/gwtmetrics.js"></script>
+<script>gwtmetrics('firebug');</script>
+}}}
+
+You should include these two lines only during development and testing. Also, you may want to save the javascript file locally.
