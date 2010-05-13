@@ -128,19 +128,115 @@ function getCompileMode() {
  * @return
  */
 function degwt_obf(gwt) {
-	this.$gwt = gwt;
+	var $gwt = gwt;
+	var that = this;
+	
 
+	/**
+	 * Gets the pretty name for a RPC Method
+	 * Assumption : 
+	 * 1) Every RPC method has a logger like this -
+	 * !!$stats&&$stats({moduleName:$moduleName,sessionId:$sessionId,subSystem:pH,evtGroup:g,method:$H,millis:(new Date).getTime(),type:_H});
+	 * 
+	 * 2) We then match the string "method:$H", and extract $H
+	 * 3) $H is a constant defined as a global variable, so we get the value of $H
+	 * 4) The value of $H will be something like GreetingService_Proxy.greetServer 
+	 * 5) We don't like the _Proxy, so we replace it with the empty string  
+	 */
+	var getRpcMethodPrettyName = function(obfMethodName, rpcMethod) {
+		var regex = /stats\(.*,\s*method\s*:\s*([a-zA-Z0-9$_]*)\s*,/;
+		var match = regex.exec(rpcMethod.toString());
+		if(match != null && match.length > 1) {
+			var constantName = match[1];
+			var constantValue = $gwt[constantName];
+			return '(' + obfMethodName + ') ' + constantValue.replace('_Proxy', '');
+		}
+		else {
+			return '(' + obfMethodName + ') ';
+		}
+	}
+	
+	/**
+	 * We return a pretty name for the class..
+	 * The toString() method is defined on every object, so we just use it.
+	 */
+	var getClassPrettyName = function(obfClassName, classObj) {
+		if(classObj && classObj.prototype && typeof(classObj.prototype.gC) === 'function' && classObj.prototype.gC()) {
+			return '(' + obfClassName + ') ' + classObj.prototype.gC().toString();
+		}
+		return '(' + obfClassName + ') ';
+	};
+	
+	/*
+	 * Gets the number of parameters that the given function expects
+	 */
+	var getNumberOfParameters = function (methodName, methodObj) {
+		var regex = /\s*function\s+([a-zA-Z$0-9]+)\s*\((.*)\)\s*{/;
+		var match = regex.exec(methodObj.toString());
+		if (match && match.length === 3 && match[1] === methodName) {
+			return match[2].split(",").length;
+		}
+		else {
+			throw {
+                name: 'getNumberOfParameters',
+                message : "Cannot find number of parameters for method " + methodName
+            };
+		}
+	};
+	
+	/*
+	 * Before trying to understand this method, read this obfuscated javascript
+	 * 
+	 * 
+	 */
+	var getRPCMethodFormalParameters = function(methodName, methodObj) {
+		var numberOfRPCParameters = getNumberOfParameters(methodName, methodObj) - 2;
+		
+		var temp = $gwt.filter(function(key, value) {
+			//if it is a variable whose value is numberOfRPCParameters ..
+			if (typeof(value) === 'string' && value === ('' +numberOfRPCParameters)) {
+				return true;
+			}
+			return false;
+		});
+		
+		if (!temp || !temp.getFirstKey()) {
+			throw {
+				name: 'getRPCMethodFormalParameters',
+                message : "Can't find the variable whose value is " + numberOfRPCParameters
+			};
+		}
+		var constantName = temp.getFirstKey();
+		
+		var appendMethodNameRegex = new RegExp("([a-zA-Z0-9$]{2,4})\\([a-zA-Z$.]+\\s*,\\s*" + constantName + "\\s*\\);");
+		temp = appendMethodNameRegex.exec(methodObj.toString());
+		
+		if(!temp || temp.length != 2) {
+			throw {
+				name: 'getRPCMethodFormalParameters',
+                message : "Can't find the obfuscated name for method append()"
+			};
+		}
+		
+		var appendMethodName = temp[1];
+		
+		/*
+		 * Now, find methods 
+		 */
+		return appendMethodName;
+	};
+	 
 	/**
 	 * Get all the RPC methods that can be found.
 	 * Algorithm :
-	 * 1) Get the variable that has the value "check the network connection"
+	 * 1) Get the variable that has the value "requestSent"
 	 * 2) Get the method that contains the above variable. This is the $doInvoke() method in pretty mode
 	 * 3) Get all the methods that invoke the above method. Any method that calls $doInvoke() is a RPC method
 	 */
 	this.getAllRPCMethods = function() {
-		var literal = 'check the network connection';
-		var temp1 = this.$gwt.filter(function(key, value) {
-			if(typeof(value) == 'string' && value.indexOf(literal) != -1) {
+		var literal = 'requestSent';
+		var temp1 = $gwt.filter(function(key, value) {
+			if(typeof(value) == 'string' && value === literal) {
 				return true;
 			}
 			return false;
@@ -148,7 +244,7 @@ function degwt_obf(gwt) {
 		
 		var variableName = temp1.getFirstKey();
 		
-		var temp2 = this.$gwt.filter(function(key, value) {
+		var temp2 = $gwt.filter(function(key, value) {
 			if(typeof(value) == 'function' && value.toString().indexOf(variableName) != -1) {
 				return true;
 			}
@@ -156,7 +252,7 @@ function degwt_obf(gwt) {
 		});
 		var doInvokeMethodName = temp2.getFirstKey();
 		
-		var rpcMethods = this.$gwt.filter(function(key, value) {
+		var rpcMethods = $gwt.filter(function(key, value) {
 			if(typeof(value) == 'function' && key.indexOf(doInvokeMethodName) == -1 && value.toString().indexOf(doInvokeMethodName + '(') != -1) {
 				return true;
 			}
@@ -182,7 +278,7 @@ function degwt_obf(gwt) {
 	 * 2) Return the objects after trying to find the de-obfuscated classname
 	 */
 	this.getAllClasses = function(){
-		var rawClasses = this.$gwt.filter(function(key, value) {
+		var rawClasses = $gwt.filter(function(key, value) {
 			try {
 				if((typeof(value) == 'function') && typeof(value.prototype) == 'object' && typeof(value.prototype.eQ) == 'function') {
 					return true;
@@ -219,39 +315,31 @@ function degwt_obf(gwt) {
 	};
 	
 	/**
-	 * Gets the pretty name for a RPC Method
-	 * Assumption : 
-	 * 1) Every RPC method has a logger like this -
-	 * !!$stats&&$stats({moduleName:$moduleName,sessionId:$sessionId,subSystem:pH,evtGroup:g,method:$H,millis:(new Date).getTime(),type:_H});
-	 * 
-	 * 2) We then match the string "method:$H", and extract $H
-	 * 3) $H is a constant defined as a global variable, so we get the value of $H
-	 * 4) The value of $H will be something like GreetingService_Proxy.greetServer 
-	 * 5) We don't like the _Proxy, so we replace it with the empty string  
+	 * De-obfuscates the given method name and returns an Object containing the following information - 
+	 * 	1) Pretty Name
+	 *  2) Arguments with formal parameter types
+	 *  3) De-obfuscated source of the method
+	 *  
+	 * @param methodName the obfuscated method name
+	 * @return
 	 */
-	var getRpcMethodPrettyName = function(obfMethodName, rpcMethod) {
-		var regex = /stats\(.*,\s*method\s*:\s*([a-zA-Z0-9$_]*)\s*,/;
-		var match = regex.exec(rpcMethod.toString());
-		if(match != null && match.length > 1) {
-			var constantName = match[1];
-			var constantValue = $gwt[constantName];
-			return '(' + obfMethodName + ') ' + constantValue.replace('_Proxy', '');
+	this.deObfuscateRPCMethod = function(methodName) {
+		var method = $gwt[methodName];
+		var result = {};
+		
+		if(!method) {
+			return result;
 		}
-		else {
-			return '(' + obfMethodName + ') ';
-		}
-	}
+		
+		result.name = {};
+		result.name.obfuscated = methodName;
+		result.name.pretty = getRpcMethodPrettyName(methodName, method);
+		result.numberOfParameters = getNumberOfParameters(methodName, method);
+		result.variableNameForNumberOfRPCParameters = getRPCMethodFormalParameters(methodName, method);
+		
+		return result;
+	};
 	
-	/**
-	 * We return a pretty name for the class..
-	 * The toString() method is defined on every object, so we just use it.
-	 */
-	var getClassPrettyName = function(obfClassName, classObj) {
-		if(classObj && classObj.prototype && typeof(classObj.prototype.gC) === 'function' && classObj.prototype.gC()) {
-			return '(' + obfClassName + ') ' + classObj.prototype.gC().toString();
-		}
-		return '(' + obfClassName + ') ';
-	}
 };
 
 /**
